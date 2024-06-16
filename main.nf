@@ -20,7 +20,7 @@ workflow {
   // Read samples table
   Channel.fromPath("${params.sample_table_path}")
     .splitCsv(header: true, sep: '\t')
-    .map{ row -> tuple(row.sample_id, file(row.file_path), row.scale, row.options) }
+    .map{ row -> tuple(row.sample_id, file(row.file_path), row.scale, row.measurements_spacing, row.options) }
     .set{ samples_info }
 
   // Run processing
