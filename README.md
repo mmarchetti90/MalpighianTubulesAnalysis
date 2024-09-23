@@ -24,7 +24,7 @@ The pipeline will process tiff movies using the following steps:
 
     * Detect and mark 3 areas of the mask corresponding to the tubule lumen and background areas on either side of the tubule.
 
-    * Compare each time point to 4 others (-10, -5, +5, and +10 frames from the time point being processed) to identify and remove vesicles in the lumen.
+    * Compare each time point to 4 others (-10, -5, +5, and +10 frames from the time point being processed) to identify and remove vesicles in the lumen (optional, could result in segmentation errors if tubule is moving a lot).
 
 * Process each time point as follows:
 
@@ -86,6 +86,10 @@ Possible options are:
 * --make_mask : thresholds the image and generates a mask
 
 * --make_mask --remove_background : cleans up the image, then thresholds it and generates a mask
+
+* --make_mask --vesicles_removal : thresholds the image, aggressively removing vesicles by comparing time-points
+
+* --make_mask --remove_background --vesicles_removal : cleans up the image, thresholds it, generates a mask, and removes vesicles
 
 Options field can also be left empty if none of the above is desired.
 

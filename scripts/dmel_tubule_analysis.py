@@ -19,9 +19,12 @@ def display_help():
     --sample_name : string, required
         Name of sample, to be used as prefix for output files.
     --movie : string path, required
-        Path to the movie to analuze.
+        Path to the movie to analyze.
     --make_mask : optional
         If used, this option will convert the movie to a mask.
+    --vesicles_removal : optional
+        If used, vesicles will be aggressively removed.
+        This may cause segmentation errors.
     --remove_background : optional
         If used, this option will remove the background using a no-neighborg
         algorithm prior to masking.
@@ -62,6 +65,15 @@ def parse_args():
         
         masking = False
     
+    # Is the movie already masked?
+    if '--vesicles_removal' in argv:
+        
+        vesicles_removal = True
+        
+    else:
+        
+        vesicles_removal = False
+
     # Remove background before masking?
     if '--remove_background' in argv:
         
@@ -88,7 +100,7 @@ def parse_args():
         
         measurements_spacing = 20
     
-    return sample_name, movie_path, masking, remove_background, scale, measurements_spacing
+    return sample_name, movie_path, masking, vesicles_removal, remove_background, scale, measurements_spacing
 
 ### ---------------------------------------- ###
 
@@ -105,6 +117,10 @@ class malpighian_movie_processing:
     masking : bool, optional
         Set to true to mask the image, false if the image is already a mask.
         Default = True
+    remove_vesicles : bool, optional
+        Set to true to aggressively attempt to remove lumen vesicles.
+        This may cause segmentation errors.
+        Default = False
     cleanup : bool, optional
         Set to True if you want to remove the background using a no-neighborg
         algorithm prior to masking.
@@ -135,10 +151,11 @@ class malpighian_movie_processing:
         Processes the movie and creates a results table.
     """
 
-    def __init__(self, movie_path, masking=True, cleanup=True, scale=1, spacing=10, output_prefix='data'):
+    def __init__(self, movie_path, masking=True, remove_vesicles=False, cleanup=True, scale=1, spacing=10, output_prefix='data'):
 
         # Set class vars
         self.masking_toggle = masking
+        self.remove_vesicles_toggle = remove_vesicles
         self.cleanup_toggle = cleanup
         self.scale = scale
         self.spacing = spacing
@@ -197,26 +214,32 @@ class malpighian_movie_processing:
             print(f'\rMasked {t + 1} / {self.movie.shape[0]} frames', end='')
     
         # Removing vesicles touching the cells
-        print('\nTrying to remove vescicles touching cells')
-        time_deltas = [-10, -5, 5, 10]
-        masks_corrected = []
-        for t in range(len(masks)):
-            
-            m_corrected = masks[t].copy()
-            
-            for td in time_deltas:
+        if self.remove_vesicles_toggle:
+
+            print('\nTrying to remove vescicles touching cells')
+            time_deltas = [-10, -5, 5, 10]
+            masks_corrected = []
+            for t in range(len(masks)):
                 
-                try:
+                m_corrected = masks[t].copy()
                 
-                    m_corrected_tmp = self.remove_vesicles(masks[t].copy(), masks[t + td])
-            
-                except:
+                for td in time_deltas:
+                    
+                    try:
+                    
+                        m_corrected_tmp = self.remove_vesicles(masks[t].copy(), masks[t + td])
                 
-                    m_corrected_tmp = np.zeros(masks[t].shape)
-            
-                m_corrected[m_corrected_tmp == 3] = 3
-            
-            masks_corrected.append(m_corrected)
+                    except:
+                    
+                        m_corrected_tmp = np.zeros(masks[t].shape)
+                
+                    m_corrected[m_corrected_tmp == 3] = 3
+                
+                masks_corrected.append(m_corrected)
+
+        else:
+
+            masks_corrected = masks
         
         # Make diagnostic mask for m
         diagnostics = []
@@ -1076,12 +1099,12 @@ if '--help' in argv or '-h' in argv:
 
 else:
     
-    sample_name, movie_path, masking, remove_background, scale, measurements_spacing = parse_args()
+    sample_name, movie_path, masking, vesicles_removal, remove_background, scale, measurements_spacing = parse_args()
 
 ### Processing
 
 # Init class
-analysis = malpighian_movie_processing(movie_path, masking, remove_background, scale, measurements_spacing, sample_name)
+analysis = malpighian_movie_processing(movie_path, masking, vesicles_removal, remove_background, scale, measurements_spacing, sample_name)
 
 # Process movie
 analysis.process_movie()
