@@ -225,6 +225,10 @@ class malpighian_movie_processing:
                 
                 for td in time_deltas:
                     
+                    if t + td < 0:
+                        
+                        continue
+                    
                     try:
                     
                         m_corrected_tmp = self.remove_vesicles(masks[t].copy(), masks[t + td])
